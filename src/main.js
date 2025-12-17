@@ -34,6 +34,9 @@ const config = {
         mode: Phaser.Scale.RESIZE,
         autoCenter: Phaser.Scale.CENTER_BOTH
     },
+    input: {
+        activePointers: 3, // Cho phép đa điểm (2 ngón tay cùng lúc)
+    },
     scene: { preload, create, update }
 };
 
@@ -54,8 +57,12 @@ let pendingDualData = null;
 
 let enemySafeCount = 0; 
 
+// Biến điều khiển
 let isMovingLeft = false;
 let isMovingRight = false;
+// Biến lưu đối tượng nút để đổi màu khi bấm
+let btnLeftVisual;
+let btnRightVisual;
 
 function preload() {
     const g = this.make.graphics();
@@ -78,16 +85,16 @@ function preload() {
     g.generateTexture('enemy', ENEMY_SIZE, ENEMY_SIZE);
     g.clear();
 
-    // Spring (MÀU MỚI: TÍM HỒNG - DỄ NHÌN)
-    g.fillStyle(0xFF00FF, 1); // Màu Tím Hồng (Magenta)
+    // Spring
+    g.fillStyle(0xFF00FF, 1);
     g.fillRect(0, 0, SPRING_SIZE, SPRING_SIZE/2); 
     g.generateTexture('spring', SPRING_SIZE, SPRING_SIZE/2);
     g.clear();
 
-    // Touch Button
-    g.fillStyle(0xFFFFFF, 0.3);
-    g.fillCircle(30, 30, 30);
-    g.generateTexture('touchBtn', 60, 60);
+    // Touch Button (Vẽ to hơn chút cho đẹp)
+    g.fillStyle(0xFFFFFF, 0.4);
+    g.fillCircle(40, 40, 40); // Bán kính 40
+    g.generateTexture('touchBtn', 80, 80);
 }
 
 function create() {
@@ -201,28 +208,49 @@ function createInterface(scene) {
 }
 
 function createTouchControls(scene) {
-    const btnY = SCREEN_H - 80;
-    const btnLeftX = 60;
-    const btnRightX = SCREEN_W - 60;
+    const btnY = SCREEN_H - 100; // Đặt cao lên xíu
+    const btnLeftX = 80;
+    const btnRightX = SCREEN_W - 80;
 
-    const btnLeft = scene.add.image(btnLeftX, btnY, 'touchBtn').setScrollFactor(0).setInteractive();
-    const arrowLeft = scene.add.text(btnLeftX, btnY, '◄', { fontSize: '30px', fill: '#FFF' }).setOrigin(0.5).setScrollFactor(0);
+    // Chỉ tạo hình ảnh, KHÔNG GẮN SỰ KIỆN CLICK VÀO HÌNH
+    // Để tránh việc trượt ngón tay ra ngoài là mất tác dụng
+    btnLeftVisual = scene.add.image(btnLeftX, btnY, 'touchBtn').setScrollFactor(0).setAlpha(0.5);
+    const arrowLeft = scene.add.text(btnLeftX, btnY, '◄', { fontSize: '40px', fill: '#FFF' }).setOrigin(0.5).setScrollFactor(0);
     
-    btnLeft.on('pointerdown', () => { isMovingLeft = true; btnLeft.setAlpha(0.8); });
-    btnLeft.on('pointerup', () => { isMovingLeft = false; btnLeft.setAlpha(1); });
-    btnLeft.on('pointerout', () => { isMovingLeft = false; btnLeft.setAlpha(1); });
-
-    const btnRight = scene.add.image(btnRightX, btnY, 'touchBtn').setScrollFactor(0).setInteractive();
-    const arrowRight = scene.add.text(btnRightX, btnY, '►', { fontSize: '30px', fill: '#FFF' }).setOrigin(0.5).setScrollFactor(0);
-
-    btnRight.on('pointerdown', () => { isMovingRight = true; btnRight.setAlpha(0.8); });
-    btnRight.on('pointerup', () => { isMovingRight = false; btnRight.setAlpha(1); });
-    btnRight.on('pointerout', () => { isMovingRight = false; btnRight.setAlpha(1); });
+    btnRightVisual = scene.add.image(btnRightX, btnY, 'touchBtn').setScrollFactor(0).setAlpha(0.5);
+    const arrowRight = scene.add.text(btnRightX, btnY, '►', { fontSize: '40px', fill: '#FFF' }).setOrigin(0.5).setScrollFactor(0);
 }
 
 function update() {
     if (isGameOver) return;
 
+    // --- XỬ LÝ CẢM ỨNG MỚI (INPUT POLLING) ---
+    // Reset trạng thái mỗi khung hình
+    isMovingLeft = false;
+    isMovingRight = false;
+    btnLeftVisual.setAlpha(0.5); // Làm mờ lại
+    btnRightVisual.setAlpha(0.5);
+
+    // Kiểm tra tất cả các ngón tay đang chạm vào màn hình
+    // pointer1 (ngón 1), pointer2 (ngón 2)...
+    const pointers = [this.input.pointer1, this.input.pointer2];
+
+    pointers.forEach(pointer => {
+        if (pointer.isDown) {
+            // Nếu chạm vào vùng bên TRÁI (phần dưới màn hình)
+            if (pointer.x < CENTER_X && pointer.y > SCREEN_H / 2) {
+                isMovingLeft = true;
+                btnLeftVisual.setAlpha(1); // Sáng lên
+            }
+            // Nếu chạm vào vùng bên PHẢI (phần dưới màn hình)
+            else if (pointer.x > CENTER_X && pointer.y > SCREEN_H / 2) {
+                isMovingRight = true;
+                btnRightVisual.setAlpha(1); // Sáng lên
+            }
+        }
+    });
+
+    // --- ĐIỀU KHIỂN NHÂN VẬT ---
     if (cursors.left.isDown || isMovingLeft) {
         player.setVelocityX(-300);
         player.setFlipX(true);
@@ -338,7 +366,7 @@ function resetPlatformProperties(p, x, y, type) {
 
     if (type === 'start') return;
 
-    // TĂNG TỈ LỆ LÒ XO LÊN 20% (Để dễ test)
+    // Tỉ lệ Lò Xo 20%
     let hasSpring = false;
     if (Phaser.Math.Between(1, 100) <= 20) {
         spawnSpring(p);
