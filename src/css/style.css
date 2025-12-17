@@ -1,11 +1,12 @@
 body {
-    margin: 0;
-    padding: 0;
-    overflow: hidden; /* Ẩn thanh cuộn */
-    background-color: #000;
-  }
-  
-  #app {
-    width: 100%;
-    height: 100vh;
-  }
+  margin: 0;
+  padding: 0;
+  overflow: hidden; /* Ẩn thanh cuộn */
+  background-color: #87CEEB; /* Trùng màu nền game */
+}
+
+canvas {
+  display: block; /* Xóa khoảng trắng dưới chân canvas */
+  width: 100vw;
+  height: 100vh;
+}
