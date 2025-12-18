@@ -84,7 +84,7 @@ function preload() {
     g.clear();
 
     // Platform
-    g.fillStyle(0x8B4513, 1);
+    g.fillStyle(0xE0FFFF, 1); // Đổi màu gốc sang Trắng Xanh (LightCyan)
     g.fillRect(0, 0, PLATFORM_W, PLATFORM_H);
     g.generateTexture('platform', PLATFORM_W, PLATFORM_H);
     g.clear();
@@ -375,9 +375,9 @@ function recyclePlatform(platform) {
         platform.x = newX;
         platform.y = minPlatformY;
 
-        let trapChance = 10;
-        if (score > 50) trapChance = 20;
-        if (score > 150) trapChance = 30;
+        let trapChance = 20;
+        if (score > 50) trapChance = 30;
+        if (score > 150) trapChance = 40;
 
         if (Phaser.Math.Between(1, 100) <= trapChance) {
             // Tạo thang giả -> Lưu vị trí để thang tiếp theo thành thang thật ở làn khác
@@ -414,7 +414,7 @@ function resetPlatformProperties(p, x, y, type) {
     }
 
     if (type === 'fake') {
-        p.setTint(0x999999);
+        p.setTint(0xFF0000); // Đổi sang màu ĐỎ cho thang fake
         p.isFake = true;
         if (!hasSpring && enemySafeCount <= 0) trySpawnEnemy(p, true);
         return;
@@ -425,7 +425,7 @@ function resetPlatformProperties(p, x, y, type) {
     if (score > 150) movingChance = 30;
 
     if (type !== 'real' && Phaser.Math.Between(1, 100) <= movingChance) {
-        p.setTint(0x0000FF);
+        p.setTint(0x00FFFF); // Đổi sang màu Cyan (Xanh lơ) cho thang di chuyển
         p.isMoving = true;
         let speedBonus = Math.min(score, 100);
         p.moveSpeed = Phaser.Math.Between(50, 150 + speedBonus);
