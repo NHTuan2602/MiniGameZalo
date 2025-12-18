@@ -1,17 +1,17 @@
 import Phaser from 'phaser';
 
 // --- CẤU HÌNH ---
-const PLAYER_SIZE = 20;
-const PLATFORM_W = 70;
+const PLAYER_SIZE = 30;
+const PLATFORM_W = 120;
 const PLATFORM_H = 15;
-const ENEMY_SIZE = 12; 
-const SPRING_SIZE = 15; 
+const ENEMY_SIZE = 20; 
+const SPRING_SIZE = 25; 
 
 const SCREEN_W = window.innerWidth;
 const SCREEN_H = window.innerHeight;
 
 const SAFE_MARGIN = PLATFORM_W / 2 + 10; 
-
+//const SAFE_MARGIN = 70;
 // --- CẤU HÌNH 3 LÀN ĐƯỜNG ---
 const CENTER_X = SCREEN_W / 2;
 const LANE_LEFT = SCREEN_W * 0.2;   // 20% màn hình
@@ -77,8 +77,8 @@ function preload() {
     const g = this.make.graphics();
     
     // Player
-    g.fillStyle(0x00ff00, 1);
-    g.fillRect(0, 0, PLAYER_SIZE, PLAYER_SIZE);
+    g.fillStyle(0x00ff00, 1); // Màu xanh lá cây
+    g.fillRect(0, 0, PLAYER_SIZE, PLAYER_SIZE); // Tạo hình vuông
     g.generateTexture('player', PLAYER_SIZE, PLAYER_SIZE);
     g.clear();
 
@@ -181,7 +181,7 @@ function create() {
 
 function createStartSafeZone() {
     // Thang đầu tiên ở giữa
-    const startX = Phaser.Math.Clamp(LANE_CENTER, SAFE_MARGIN, SCREEN_W - SAFE_MARGIN);
+    const startX =  LANE_CENTER ;//Phaser.Math.Clamp(LANE_CENTER, SAFE_MARGIN, SCREEN_W - SAFE_MARGIN);
     const startPlatform = platforms.create(startX, 500, 'platform');
     resetPlatformProperties(startPlatform, startX, 500, 'start');
     minPlatformY = 500;
@@ -194,7 +194,7 @@ function spawnInitialPlatforms() {
         let offsetX = Phaser.Math.Between(-30, 30); // Độ lệch nhỏ để không thẳng hàng tăm tắp
         
         let rawX = baseX + offsetX;
-        let x = Phaser.Math.Clamp(rawX, SAFE_MARGIN, SCREEN_W - SAFE_MARGIN);
+        let x = Phaser.Math.Clamp(rawX, SAFE_MARGIN, SCREEN_W - SAFE_MARGIN)
         let y = 500 - i * 85; 
         
         let p = platforms.create(x, y, 'platform');
@@ -397,7 +397,7 @@ function resetPlatformProperties(p, x, y, type) {
     if (score > 1000) {
         scaleFactor = 0.4; 
     } else if (score > 50) {
-        scaleFactor = Math.max(0.6, 1 - ((score - 50) * 0.002));
+        scaleFactor = Math.max(0.7, 1 - ((score - 50) * 0.001));
     }
     p.setScale(scaleFactor, 1);
     p.refreshBody(); // Cập nhật lại vùng va chạm vật lý sau khi scale
