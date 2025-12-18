@@ -63,7 +63,6 @@ let timeText;
 let isGameOver = false;
 let timerEvent;
 let minPlatformY; 
-let pendingDualData = null; 
 
 let enemySafeCount = 0; 
 
@@ -136,13 +135,8 @@ function create() {
     // Physics Colliders
     this.physics.add.collider(player, platforms, (player, platform) => {
         if (player.body.touching.down) {
-            if (platform.isFake) {
-                platform.alpha = 0; 
-                platform.body.checkCollision.none = true;
-            } else {
-                player.setVelocityY(-700); 
-                player.y -= 4; 
-            }
+            player.setVelocityY(-700); 
+            player.y -= 4; 
         }
     });
 
@@ -194,7 +188,7 @@ function createStartSafeZone() {
 }
 
 function spawnInitialPlatforms() {
-    for (let i = 1; i <= 3000; i++) {
+    for (let i = 1; i <= 1000; i++) {
         // Random 1 trong 3 làn
         let baseX = Phaser.Math.RND.pick(LANES);
         let offsetX = Phaser.Math.Between(-30, 30); // Độ lệch nhỏ để không thẳng hàng tăm tắp
@@ -341,52 +335,21 @@ function recyclePlatform(platform) {
     const attachedSprings = springs.getChildren().filter(s => s.platformParent === platform);
     attachedSprings.forEach(s => s.destroy());
 
-    // --- LOGIC 3 LÀN + BẪY ---
+    // Sinh thang mới
+    minPlatformY -= Phaser.Math.Between(85, 105);
     
-    if (pendingDualData) {
-        // Đang chờ tạo cặp cho bẫy
-        // Tìm các làn đường an toàn (khác làn của thang giả)
-        // pendingDualData.x là vị trí thang giả
-        platform.y = pendingDualData.y;
-        
-        // Lọc ra các làn cách xa thang giả
-        const safeLanes = LANES.filter(lane => Math.abs(lane - pendingDualData.x) > (SCREEN_W * 0.2));
-        
-        // Chọn ngẫu nhiên 1 trong các làn an toàn còn lại
-        let safeBaseX = Phaser.Math.RND.pick(safeLanes);
-        let safeX = Phaser.Math.Clamp(safeBaseX + Phaser.Math.Between(-30, 30), SAFE_MARGIN, SCREEN_W - SAFE_MARGIN);
-        
-        platform.x = safeX;
-        resetPlatformProperties(platform, platform.x, pendingDualData.y, 'real');
-        pendingDualData = null; 
-    } 
-    else {
-        // Sinh thang mới
-        minPlatformY -= Phaser.Math.Between(85, 105);
-        
-        // Random 1 trong 3 làn
-        let baseX = Phaser.Math.RND.pick(LANES);
-        let range = Math.min(40 + (score * 0.5), 80); 
-        let offsetX = Phaser.Math.Between(-range, range);
-        
-        let newX = baseX + offsetX;
-        newX = Phaser.Math.Clamp(newX, SAFE_MARGIN, SCREEN_W - SAFE_MARGIN);
-        
-        platform.x = newX;
-        platform.y = minPlatformY;
+    // Random 1 trong 3 làn
+    let baseX = Phaser.Math.RND.pick(LANES);
+    let range = Math.min(40 + (score * 0.5), 80); 
+    let offsetX = Phaser.Math.Between(-range, range);
+    
+    let newX = baseX + offsetX;
+    newX = Phaser.Math.Clamp(newX, SAFE_MARGIN, SCREEN_W - SAFE_MARGIN);
+    
+    platform.x = newX;
+    platform.y = minPlatformY;
 
-        let trapChance = 20;
-        if (score > 50) trapChance = 30;
-        if (score > 150) trapChance = 40;
-
-        if (Phaser.Math.Between(1, 100) <= trapChance) {
-            // Tạo thang giả -> Lưu vị trí để thang tiếp theo thành thang thật ở làn khác
-            resetPlatformProperties(platform, newX, minPlatformY, 'fake');
-            pendingDualData = { x: newX, y: minPlatformY }; 
-        } else {
-            resetPlatformProperties(platform, newX, minPlatformY, 'random');
-        }
-    }
+    resetPlatformProperties(platform, newX, minPlatformY, 'random');
 }
 
 function resetPlatformProperties(p, x, y, type) {
@@ -398,7 +361,6 @@ function resetPlatformProperties(p, x, y, type) {
     p.setVisible(true); 
     p.active = true;
     p.body.checkCollision.none = false;
-    p.isFake = false;
     p.isMoving = false;
     p.moveSpeed = 0;
 
@@ -413,13 +375,6 @@ function resetPlatformProperties(p, x, y, type) {
         hasSpring = true;
     }
 
-    if (type === 'fake') {
-        p.setTint(0xFF0000); // Đổi sang màu ĐỎ cho thang fake
-        p.isFake = true;
-        if (!hasSpring && enemySafeCount <= 0) trySpawnEnemy(p, true);
-        return;
-    }
-
     let movingChance = 10;
     if (score > 50) movingChance = 20;
     if (score > 150) movingChance = 30;
@@ -432,9 +387,9 @@ function resetPlatformProperties(p, x, y, type) {
         let direction = Phaser.Math.RND.pick([-1, 1]);
         p.setVelocityX(p.moveSpeed * direction);
         
-        if (!hasSpring && enemySafeCount <= 0) trySpawnEnemy(p, false);
+        if (!hasSpring && enemySafeCount <= 0) trySpawnEnemy(p);
     } else {
-        if (!hasSpring && enemySafeCount <= 0) trySpawnEnemy(p, false);
+        if (!hasSpring && enemySafeCount <= 0) trySpawnEnemy(p);
     }
 }
 
@@ -447,21 +402,14 @@ function spawnSpring(platform) {
     }
 }
 
-function trySpawnEnemy(platform, isFake) {
+function trySpawnEnemy(platform) {
     let spawnRate = 20; 
     if (score > 50) spawnRate = 40;
     if (score > 150) spawnRate = 60;
-    if (isFake) spawnRate = 80; 
 
     if (Phaser.Math.Between(1, 100) <= spawnRate) {
-        let offsetX = 0;
-        if (isFake) {
-            const positions = [-20, 0, 20];
-            offsetX = positions[Phaser.Math.Between(0, 2)];
-        }
-
         const enemyY = platform.y - (PLATFORM_H / 2) - (ENEMY_SIZE / 2) - 2; 
-        const enemy = enemies.create(platform.x + offsetX, enemyY, 'enemy');
+        const enemy = enemies.create(platform.x, enemyY, 'enemy');
         enemy.setTint(0xFF0000);
         enemy.platformParent = platform;
         if (platform.isMoving) {
